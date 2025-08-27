@@ -40,8 +40,8 @@ def get_content_html(entry):
     return entry.content[0].value
   return entry.get("summary", "")
 
-def write_article_file(date, slug, title, canonical_url, content_html):
-  filename: f"{date.isoformat()}-{slug}.html"
+def write_article_file(date, slug, title, link, content_html):
+  filename = f"{date.isoformat()}-{slug}.html"
   path = ARTICLES_DIR / filename
   if path.exists():
       return None #if already imported
@@ -92,10 +92,9 @@ def build_index():
       title = m.group(1).strip() if m else f.name
     except Exception:
       title = f.name
-      items.append((f.name, title))
+    items.append((f.name, title))
 
-index_html = """
-<!DOCTYPE html>
+index_html = """ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -132,7 +131,7 @@ for entry in feed.entries:
   date = parse_date(entry)
   content_html = get_content_html(entry)
   slug = slugify(title)
-  created = write_article_file(date, slug, title, content_html)
+  created = write_article_file(date, slug, title, link, content_html)
   if created: 
     added.append(created)
 
