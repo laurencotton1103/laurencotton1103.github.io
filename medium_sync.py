@@ -77,9 +77,8 @@ def write_article_file(date, slug, title, canonical_url, content_html):
 </body>
 </html>
 """
-
-    path.write_text(html, encoding="utf-8")
-    return path.name
+  path.write_text(html, encoding="utf-8")
+  return path.name
 
 def build_index():
   #Build/refresh a simple index for page for /articles/
@@ -93,7 +92,7 @@ def build_index():
       title = m.group(1).strip() if m else f.name
     except Exception:
       title = f.name
-    items.append((f.name, title))
+      items.append((f.name, title))
 
   index_html = """
 <!DOCTYPE html>
