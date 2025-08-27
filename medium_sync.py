@@ -46,14 +46,13 @@ def write_article_file(date, slug, title, link, content_html):
   if path.exists():
       return None #if already imported
     
-  html = """
-<!DOCTYPE html>
+  html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>{title}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="canonical" href="{canonical_url}" />
+  <link rel="canonical" href="{link}" />
   <style>
     body {{ max-width: 760px; margin: 2rem auto; padding: 0 1rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; line-height: 1.6; }}
     header, footer {{ color: #666; font-size: 0.9rem; }}
@@ -75,8 +74,8 @@ def write_article_file(date, slug, title, link, content_html):
     <p>© {datetime.date.today().year} · Canonical version on Medium: <a href="{canonical_url}">{canonical_url}</a></p>
   </footer>
 </body>
-</html>
-"""
+</html>"""
+
   path.write_text(html, encoding="utf-8")
   return path.name
 
