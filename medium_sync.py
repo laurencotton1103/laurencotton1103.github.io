@@ -94,7 +94,7 @@ def build_index():
       title = f.name
       items.append((f.name, title))
 
-  index_html = """
+index_html = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -117,7 +117,7 @@ def build_index():
 </html>""".format(
     "\n    ".join(f'<li><a href="/articles/{name}">{title}</a></li>' for name, title in items)
 )
-(ARTICLES_DIR / "index.html").write_text(index.html, encoding="utf-8")
+(ARTICLES_DIR / "index.html").write_text(index_html, encoding="utf-8")
 
 #Fetch feed (use custom UA to avoid 403s)
 headers = {"User-Agent": "GithubActions-MediumSync/1.0 (https://github.com)"}
