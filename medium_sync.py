@@ -101,9 +101,9 @@ def build_index():
   <title>Articles</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { max-width: 760px; margin: 2rem auto; padding: 0 1rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; line-height: 1.6; }
-    h1 { margin-bottom: 1rem; }
-    li { margin: 0.5rem 0; }
+    body {{ max-width: 760px; margin: 2rem auto; padding: 0 1rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; line-height: 1.6; }}
+    h1 {{ margin-bottom: 1rem; }}
+    li {{ margin: 0.5rem 0; }}
   </style>
 </head>
 <body>
