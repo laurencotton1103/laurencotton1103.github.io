@@ -127,7 +127,7 @@ for attempt in range(max_retries):
   resp = requests.get(FEED_URL, headers=headers, timeout=30)
   if resp.status_code === 429:
     wait = 2 ** attempt
-    print(f"Rate limited by Medium. Waiting {wait}s before retrying..."}
+    print(f"Rate limited by Medium. Waiting {wait}s before retrying...")
     time.sleep(wait)
     continue
   resp.raise_for_status()
