@@ -82,7 +82,7 @@ def write_article_file(date, slug, title, canonical_url, content_html):
 
 def build_index():
   #Build/refresh a simple index for page for /articles/
-  files = sorted(ARTICLES_DIR).glob("*.html"), reverse=True)
+  files = sorted(ARTICLES_DIR.glob("*.html"), reverse=True)
   items = []
   for f in files: 
     #extract title from the file's <title> tag
