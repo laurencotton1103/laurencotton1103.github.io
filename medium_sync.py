@@ -7,6 +7,8 @@ from urllib.parse import urlparse
 import requests
 #parses RSS feeds into structured data
 import feedparser
+#adding libraries needed for avoiding 429 timeouts
+import time
 
 #Create an articles folder that will store the posts
 ARTICLES_DIR = pathlib.Path("articles")
@@ -118,9 +120,22 @@ def build_index():
   (ARTICLES_DIR / "index.html").write_text(index_html, encoding="utf-8")
 
 #Fetch feed (use custom UA to avoid 403s)
-headers = {"User-Agent": "GithubActions-MediumSync/1.0 (https://github.com)"}
-resp = requests.get(FEED_URL, headers=headers, timeout=30)
-resp.raise_for_status()
+headers = {"User-Agent": "MyMediumSyncBot/1.0 (https://github.com/laurencotton1103)"}
+
+max_retries = 5
+for attempt in range(max_retries):
+  resp = requests.get(FEED_URL, headers=headers, timeout=30)
+  if resp.status_code === 429:
+    wait = 2 ** attempt
+    print(f"Rate limited by Medium. Waiting {wait}s before retrying...}
+    time.sleep(wait)
+    continue
+  resp.raise_for_status()
+  break
+else: 
+  print("Failed to fetch feed after several retries.")
+  sys.exit()
+
 feed = feedparser.parse(resp.content)
 
 added = []
