@@ -125,7 +125,7 @@ headers = {"User-Agent": "MyMediumSyncBot/1.0 (https://github.com/laurencotton11
 max_retries = 5
 for attempt in range(max_retries):
   resp = requests.get(FEED_URL, headers=headers, timeout=30)
-  if resp.status_code === 429:
+  if resp.status_code == 429:
     wait = 2 ** attempt
     print(f"Rate limited by Medium. Waiting {wait}s before retrying...")
     time.sleep(wait)
