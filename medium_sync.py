@@ -114,7 +114,7 @@ def build_index():
   </ul>
 </body>
 </html>""".format(
-      "\n    ".join(f'<li><a href="/articles/{name}">{title}</a></li>' for name, title in items)
+    "\n    ".join(f'<li><a href="/articles/{name}">{title}</a></li>' for name, title in items)
   )
   (ARTICLES_DIR / "index.html").write_text(index_html, encoding="utf-8")
 
