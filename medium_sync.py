@@ -7,138 +7,101 @@ from urllib.parse import urlparse
 import requests
 #parses RSS feeds into structured data
 import feedparser
+#html cleanup tools
+from bs4 import BeautifulSoup
 
 #Create an articles folder that will store the posts
 ARTICLES_DIR = pathlib.Path("articles")
 ARTICLES_DIR.mkdir(exist_ok=True)
 
-#Pulls the medium feed URL from an environment variable (set in the Action)
-FEED_URL = os.environ.get("MEDIUM_FEED_URL")
+#Pulls the medium feed URL
+FEED_URL = "https://medium.com/feed/@laurencotton"
 if not FEED_URL:
-  print("ERROR: MEDIUM_FEED_URL not set")
+  print("ERROR: FEED_URL not set")
   sys.exit(1)
 
+#Pull out subtitle
+def extract_subtitle_and_content(html: str):
+  soup = BeautifulSoup(html, "html.parser")
+  first_p = soup.find("p")
+  subtitle_html = str(first_p) if first_p else ""
+  content_html = str(soup) #keeps original html for rendering
+  return subtitle_html, content_html
+
 #Helper function - converts "My Great Post!" to "my-great-post"
+#this will help us to save articles to a folder 
 def slugify(title: str) -> str:
   s = title.lower()
   s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
   return s[:80] or "post"
 
-#helper function - figures out the publication date (published -> updated -> today as fallback)
-def parse_date(entry):
-  #prefer published, then updated; fall back to today
-  for key in ("published_parsed", "updated_parsed"):
-    if getattr(entry, key, None):
-      t = getattr(entry, key)
-      return datetime.date(t.tm_year, t.tm_mon, t.tm_mday)
-  return datetime.date.today()
+#Define function that will convert txt files to html files
+def write_article_file(date, slug, title, content_html, canonical_url, subtitle_html):
+  filename = f"{date.isoformat()}-{slug}.html"
+  html_path = ARTICLES_DIR / filename
+  with open(html_path, "w", encoding="utf-8") as f: 
+    f.write("<!DOCTYPE html>\n<html><head>\n")
+    f.write("<meta charset='utf-8'>\n")
+    f.write(f"<title>{title}</title>\n")
+    f.write("</head><body>\n")
+    # Title
+    f.write(f"<h1>{title}</h1>\n")
 
-#
-def get_content_html(entry):
-  #Prefer content:encoded, then summary
-  if "content" in entry and entry.content:
-    return entry.content[0].value
-  return entry.get("summary", "")
+    # Subtitle (if present)
+    if subtitle_html:
+      f.write(f"<h2>{subtitle_html}</h2>\n")
 
-def write_article_file(date, slug, title, canonical_url, content_html):
-  filename: f"{date.isoformat()}-{slug}.html"
-  path = ARTICLES_DIR / filename
-  if path.exists():
-      return None #if already imported
+    # Link back to the original Medium article
+    f.write(f"<p><a href='{canonical_url}'>View on Medium</a></p>\n")
+
+    # Full Medium content (keeps original HTML formatting)
+    f.write(f"<div>{content_html}</div>\n")
+
+    f.write("</body></html>")
+
+  print(f"Saved: {html_path.name}")
+
+#parse through the medium feed entries to isolate the fields: Title, Subtitle, and Content
+def parse_medium_feed(FEED_URL: str):
+  feed = feedparser.parse(FEED_URL)
+
+  for entry in feed.entries:
+    Title = entry.get("title", "No title")
+    raw_content = entry.content[0].value if "content" in entry else entry.get("summary", "")
+    subtitle_html, content_html = extract_subtitle_and_content(raw_content)
+    date = datetime.date(*entry.published_parsed[:3])
+    canonical_url = entry.get("link", "")
+
+    #generate a safe filename using helper function, file auto-overwrites with new version
+    slug = slugify(Title)
+    filename = f"{slug}.html"
+    path = ARTICLES_DIR / filename
+
+    write_article_file(date, slug, Title, content_html, canonical_url, subtitle_html)
+
+parse_medium_feed(FEED_URL)
     
-  html = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>{title}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="canonical" href="{canonical_url}" />
-  <style>
-    body {{ max-width: 760px; margin: 2rem auto; padding: 0 1rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; line-height: 1.6; }}
-    header, footer {{ color: #666; font-size: 0.9rem; }}
-    img {{ max-width: 100%; height: auto; }}
-    pre {{ overflow: auto; }}
-    a {{ text-decoration: none; }}
-  </style>
-</head>
-<body>
-  <header>
-    <p><a href="/index.html">Home</a> · <a href="/articles/index.html">Articles</a></p>
-  </header>
-  <article>
-    <h1>{title}</h1>
-    <p><em>Mirrored from <a href="{canonical_url}" target="_blank" rel="noopener">Medium</a>. Published {date.isoformat()}.</em></p>
-    {content_html}
-  </article>
-  <footer>
-    <p>© {datetime.date.today().year} · Canonical version on Medium: <a href="{canonical_url}">{canonical_url}</a></p>
-  </footer>
-</body>
-</html>
-"""
-
-    path.write_text(html, encoding="utf-8")
-    return path.name
-
 def build_index():
-  #Build/refresh a simple index for page for /articles/
-  files = sorted(ARTICLES_DIR).glob("*.html"), reverse=True)
-  items = []
-  for f in files: 
-    #extract title from the file's <title> tag
-    try: 
-      text = f.read_text(encoding="utf-8", errors="ignore")
-      m = re.search(r"<title>(.*?)</title>", text, re.IGNORECASE | re.DOTALL)
-      title = m.group(1).strip() if m else f.name
-    except Exception:
-      title = f.name
-    items.append((f.name, title))
+  index_path = ARTICLES_DIR / "index.html"
 
-  index_html = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Articles</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body { max-width: 760px; margin: 2rem auto; padding: 0 1rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; line-height: 1.6; }
-    h1 { margin-bottom: 1rem; }
-    li { margin: 0.5rem 0; }
-  </style>
-</head>
-<body>
-  <p><a href="/index.html">← Back to Home</a></p>
-  <h1>Articles</h1>
-  <ul>
-    {}
-  </ul>
-</body>
-</html>""".format(
-        "\n    ".join(f'<li><a href="/articles/{name}">{title}</a></li>' for name, title in items)
-    )
-    (ARTICLES_DIR / "index.html").write_text(index_html, encoding="utf-8")
+  with open(index_path, "w", encoding="utf-8") as f: 
+    #Start HTML
+    f.write("<html><head><meta charset='utf-8'><title>My Medium Articles</title></head><body>")
+    f.write("<h1>My Medium Articles</h1>\n<ul>\n")
 
-#Fetch feed (use custom UA to avoid 403s)
-headers = {"User-Agent": "GithubActions-MediumSync/1.0 (https://github.com)"}
-resp = requests.get(FEED_URL, headers=headers, timeout=30)
-resp.raise_for_status()
-feed = feedparser.parse(resp.content)
-
-added = []
-for entry in feed.entries:
-  title = entry.get("title", "Untitled")
-  link = entry.get("link", "")
-  date = parse_date(entry)
-  content_html = get_content_html(entry)
-  slug = slugify(title)
-  created = write_article_file(date, slug, title, content_html)
-  if created: 
-    added.append(created)
+    #Loop through all HTML article files
+    for path in sorted(ARTICLES_DIR.glob("*.html")):
+      if path.name =="index.html":
+        continue #skip the index itself
+      #Extract the <h1> title from the html
+      with open(path, "r", encoding="utf-8") as article_file:
+        soup = BeautifulSoup(article_file, "html.parser")
+        title_tag = soup.find("h1")
+        title_text = title_tag.get_text(strip=True) if title_tag else path.stem
+      #Write link to index
+      f.write(f"<li><a href='{path.name}'>{title_text}</a></li>\n")
+    f.write("</ul>\n</body></html>")
+  print(f"Index page created: {index_path}")
 
 build_index()
 
-print(f"Imported {len(added)} new article(s).")
-if added:
-  print("New files:\n" + "\n".join(f"-articles/{x}" for x in added))
