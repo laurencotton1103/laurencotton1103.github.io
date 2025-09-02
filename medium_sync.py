@@ -56,7 +56,7 @@ def parse_medium_feed(FEED_URL: str):
   for entry in feed.entries:
     Title = entry.get("title", "No title")
     raw_content = entry.content[0].value if "content" in entry else entry.get("summary", "")
-    content_html = extract_content(raw_content)
+    content_html = raw_content
     date = datetime.date(*entry.published_parsed[:3])
     canonical_url = entry.get("link", "")
 
