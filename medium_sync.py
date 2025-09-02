@@ -20,14 +20,6 @@ if not FEED_URL:
   print("ERROR: FEED_URL not set")
   sys.exit(1)
 
-#Pull out subtitle
-def extract_subtitle_and_content(html: str):
-  soup = BeautifulSoup(html, "html.parser")
-  first_p = soup.find("p")
-  subtitle_html = str(first_p) if first_p else ""
-  content_html = str(soup) #keeps original html for rendering
-  return subtitle_html, content_html
-
 #Helper function - converts "My Great Post!" to "my-great-post"
 #this will help us to save articles to a folder 
 def slugify(title: str) -> str:
@@ -36,7 +28,7 @@ def slugify(title: str) -> str:
   return s[:80] or "post"
 
 #Define function that will convert txt files to html files
-def write_article_file(date, slug, title, content_html, canonical_url, subtitle_html):
+def write_article_file(date, slug, title, content_html, canonical_url):
   filename = f"{date.isoformat()}-{slug}.html"
   html_path = ARTICLES_DIR / filename
   with open(html_path, "w", encoding="utf-8") as f: 
@@ -46,10 +38,6 @@ def write_article_file(date, slug, title, content_html, canonical_url, subtitle_
     f.write("</head><body>\n")
     # Title
     f.write(f"<h1>{title}</h1>\n")
-
-    # Subtitle (if present)
-    if subtitle_html:
-      f.write(f"<h2>{subtitle_html}</h2>\n")
 
     # Link back to the original Medium article
     f.write(f"<p><a href='{canonical_url}'>View on Medium</a></p>\n")
@@ -68,7 +56,7 @@ def parse_medium_feed(FEED_URL: str):
   for entry in feed.entries:
     Title = entry.get("title", "No title")
     raw_content = entry.content[0].value if "content" in entry else entry.get("summary", "")
-    subtitle_html, content_html = extract_subtitle_and_content(raw_content)
+    content_html = extract_content(raw_content)
     date = datetime.date(*entry.published_parsed[:3])
     canonical_url = entry.get("link", "")
 
@@ -77,7 +65,7 @@ def parse_medium_feed(FEED_URL: str):
     filename = f"{slug}.html"
     path = ARTICLES_DIR / filename
 
-    write_article_file(date, slug, Title, content_html, canonical_url, subtitle_html)
+    write_article_file(date, slug, Title, content_html, canonical_url)
 
 parse_medium_feed(FEED_URL)
     
